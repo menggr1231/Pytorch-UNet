@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from torchvision import transforms
 
 
 def get_square(img, pos):
@@ -16,7 +17,18 @@ def split_img_into_squares(img):
 def hwc_to_chw(img):
     return np.transpose(img, axes=[2, 0, 1])
 
-def resize_and_crop(pilimg, scale=0.5, final_height=None):
+def transform_img(img):
+    tf = transforms.Compose(
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(brightness=0.5,contrast=0.5)
+        ]
+    )
+
+    return tf(img)
+
+
+def resize_and_crop(pilimg, scale=0.5, final_height=None,transforms=None):
     w = pilimg.size[0]
     h = pilimg.size[1]
     newW = int(w * scale)
@@ -29,6 +41,9 @@ def resize_and_crop(pilimg, scale=0.5, final_height=None):
 
     img = pilimg.resize((newW, newH))
     img = img.crop((0, diff // 2, newW, newH - diff // 2))
+    if transforms is not None:
+        img = transforms(img)
+
     return np.array(img, dtype=np.float32)
 
 def batch(iterable, batch_size):

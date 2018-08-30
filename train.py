@@ -51,6 +51,7 @@ def train_net(net,
                           weight_decay=0.0005)
 
     criterion = nn.BCELoss()
+    best_dice = 0.0
 
     for epoch in range(epochs):
         print('Starting epoch {}/{}.'.format(epoch + 1, epochs))
@@ -64,6 +65,8 @@ def train_net(net,
         for i, b in enumerate(batch(train, batch_size)):
             imgs = np.array([i[0] for i in b]).astype(np.float32)
             true_masks = np.array([i[1] for i in b])
+            true_masks = true_masks / true_masks.max()
+
 
             imgs = torch.from_numpy(imgs)
             true_masks = torch.from_numpy(true_masks)
@@ -77,6 +80,7 @@ def train_net(net,
             masks_probs_flat = masks_probs.view(-1)
 
             true_masks_flat = true_masks.view(-1)
+
 
             loss = criterion(masks_probs_flat, true_masks_flat)
             epoch_loss += loss.item()
@@ -93,10 +97,11 @@ def train_net(net,
             val_dice = eval_net(net, val, gpu)
             print('Validation Dice Coeff: {}'.format(val_dice))
 
-        if save_cp:
+        if save_cp and val_dice > best_dice:
             torch.save(net.state_dict(),
                        dir_checkpoint + 'CP{}.pth'.format(epoch + 1))
             print('Checkpoint {} saved !'.format(epoch + 1))
+            best_dice = val_dice
 
 
 
@@ -104,7 +109,7 @@ def get_args():
     parser = OptionParser()
     parser.add_option('-e', '--epochs', dest='epochs', default=5, type='int',
                       help='number of epochs')
-    parser.add_option('-b', '--batch-size', dest='batchsize', default=10,
+    parser.add_option('-b', '--batch-size', dest='batchsize', default=20,
                       type='int', help='batch size')
     parser.add_option('-l', '--learning-rate', dest='lr', default=0.1,
                       type='float', help='learning rate')

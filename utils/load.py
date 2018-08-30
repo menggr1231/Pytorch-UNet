@@ -7,7 +7,7 @@ import os
 import numpy as np
 from PIL import Image
 
-from .utils import resize_and_crop, get_square, normalize, hwc_to_chw
+from .utils import resize_and_crop, get_square, normalize, hwc_to_chw,transform_img
 
 
 def get_ids(dir):
@@ -20,27 +20,29 @@ def split_ids(ids, n=2):
     return ((id, i) for i in range(n) for id in ids)
 
 
-def to_cropped_imgs(ids, dir, suffix, scale):
+def to_cropped_imgs(ids, dir, suffix, scale,transform=False):
     """From a list of tuples, returns the correct cropped img"""
     for id, pos in ids:
-        im = resize_and_crop(Image.open(dir + id + suffix), scale=scale)
+        im = Image.open(dir + id + suffix)
+        if transform:
+            im = transform_img(im)
+        im = resize_and_crop(im, scale=scale)
         yield get_square(im, pos)
 
 def get_imgs_and_masks(ids, dir_img, dir_mask, scale):
     """Return all the couples (img, mask)"""
 
-    imgs = to_cropped_imgs(ids, dir_img, '.jpg', scale)
-
+    imgs = to_cropped_imgs(ids, dir_img, '.png', scale, transform=True)
     # need to transform from HWC to CHW
     imgs_switched = map(hwc_to_chw, imgs)
     imgs_normalized = map(normalize, imgs_switched)
 
-    masks = to_cropped_imgs(ids, dir_mask, '_mask.gif', scale)
+    masks = to_cropped_imgs(ids, dir_mask, '.png', scale, transform=False)
 
     return zip(imgs_normalized, masks)
 
 
 def get_full_img_and_mask(id, dir_img, dir_mask):
-    im = Image.open(dir_img + id + '.jpg')
-    mask = Image.open(dir_mask + id + '_mask.gif')
+    im = Image.open(dir_img + id + '.png')
+    mask = Image.open(dir_mask + id + '.gif')
     return np.array(im), np.array(mask)
