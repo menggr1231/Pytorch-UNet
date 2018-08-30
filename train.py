@@ -96,6 +96,8 @@ def train_net(net,
         if 1:
             val_dice = eval_net(net, val, gpu)
             print('Validation Dice Coeff: {}'.format(val_dice))
+            with open('acc.log','a+') as w:
+                w.write('eopch {}, acc:{}\n'.format(epoch,val_dice))
 
         if save_cp and val_dice > best_dice:
             torch.save(net.state_dict(),
